@@ -108,8 +108,8 @@ const inline = (s: string) =>
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 
-function requestsHtml(): string {
-  return reaches()
+function requestsHtml(spaces = false): string {
+  return reaches({ spaces })
     .map(
       (r) => `<section class="reach">
 <h3>${r.host === '*' ? 'Any https address' : `<code>${esc(r.host)}</code>`}</h3>
@@ -127,11 +127,11 @@ function requestsHtml(): string {
 }
 
 /** The prose as HTML: headings, paragraphs, lists of "- " items, and the generated list. */
-function proseHtml(): string {
+function proseHtml(spaces = false): string {
   return PROSE.trim()
     .split(/\n{2,}/)
     .map((block) => {
-      if (block === '{{requests}}') return requestsHtml();
+      if (block === '{{requests}}') return requestsHtml(spaces);
       const h = /^(#{1,3}) (.+)$/.exec(block);
       if (h) return `<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`;
       if (block.startsWith('- '))
@@ -175,7 +175,8 @@ dd{margin:0}
 @media (max-width:480px){dl{grid-template-columns:1fr}dd{margin-bottom:6px}}
 .note{color:var(--ink-3);font-size:.9rem}`;
 
-export function networkPage(): string {
+/** The page; with `spaces`, a Spaces build's (VITE_SPACES), which the build writes over the site's (vite.config.ts). */
+export function networkPage({ spaces = false }: { spaces?: boolean } = {}): string {
   return `<!doctype html>
 <!-- Generated from src/kit/core/network.ts by scripts/network-doc.ts (npm run docs:network). Do not edit. -->
 <html lang="en">
@@ -192,7 +193,7 @@ ${STYLE}
 <body>
 <main>
 <p class="home"><a href="./">Tiny Little Office</a></p>
-${proseHtml()}
+${proseHtml(spaces)}
 <p class="note">Written from <code>src/kit/core/network.ts</code>; the same page is <code>docs/network.md</code> in the repository.</p>
 </main>
 </body>

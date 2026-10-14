@@ -3,6 +3,7 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { fillHeaders, headersFor, inlineScripts, scriptHash } from './scripts/headers.ts';
+import { networkPage } from './scripts/network-doc.ts';
 import { listed, writePages } from './scripts/seo.ts';
 import { writeWorker } from './scripts/sw-manifest.ts';
 import { gitFacts, versionJson, versionOf } from './scripts/version.ts';
@@ -24,7 +25,7 @@ const fromSource = <T>(path: string): Promise<T> => import(pathToFileURL(resolve
  * commit, its tag and date, those hashes: scripts/version.ts).
  * For agents, /.well-known/llms.txt is /llms.txt again and /examples/<app>.json each app's examples.
  */
-function afterBuild(site: string): Plugin {
+function afterBuild(site: string, spaces: boolean): Plugin {
   return {
     name: 'tinyoffice-after-build',
     apply: 'build',
@@ -48,7 +49,9 @@ function afterBuild(site: string): Plugin {
       // the shell, the same on every page), read as scripts/check-build.ts reads them (scripts/headers.ts).
       const inline = inlineScripts(readFileSync(resolve(dist, 'index.html'), 'utf8'));
       const hashes = [...new Set([...pageScripts(), ...inline].map(scriptHash))];
-      writeFileSync(resolve(dist, '_headers'), fillHeaders(readFileSync(resolve(dist, '_headers'), 'utf8'), { scripts: hashes }));
+      writeFileSync(resolve(dist, '_headers'), fillHeaders(readFileSync(resolve(dist, '_headers'), 'utf8'), { scripts: hashes, spaces }));
+      // A Spaces build (VITE_SPACES=1) reaches hosts the site does not, and its /network page says which.
+      if (spaces) writeFileSync(resolve(dist, 'network.html'), networkPage({ spaces }));
       writeFileSync(resolve(dist, 'version.json'), versionJson(versionOf(facts, hashes)));
     },
   };
@@ -113,7 +116,7 @@ export default defineConfig(({ mode }) => ({
       '/card': { target: 'http://127.0.0.1:8789' },
     },
   },
-  plugins: [afterBuild(loadEnv(mode, import.meta.dirname).VITE_SITE_URL ?? ''), previewCache()],
+  plugins: [afterBuild(loadEnv(mode, import.meta.dirname).VITE_SITE_URL ?? '', loadEnv(mode, import.meta.dirname).VITE_SPACES === '1'), previewCache()],
   build: {
     target: 'es2022',
     outDir: 'dist',

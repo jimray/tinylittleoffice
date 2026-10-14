@@ -251,6 +251,18 @@ makes the rest checkable by a stranger, and a test holds each.
 Later: an independent audit of the crypto and the shortener, published in full; a public test dashboard; a signed
 SBOM with each release.
 
+## A Spaces build is not this site
+
+A build made with `VITE_SPACES=1` is an experiment in keeping a document in an atproto space, with its versions
+(`src/kit/share/versions.ts`), and none of this page holds for it. A document kept in a space is on the PDS of
+every member who saved a version of it, in the clear: a space decides who may read it, and does not hide it from the
+hosts that keep it. Those hosts are each member's own, unknown until someone signs in, so that build's
+Content-Security-Policy lets its editor reach any https address (`connect-src https:`), and the policy stops nothing a
+compromised dependency might send. The embed page's policy is unchanged, and so is the site's: the same build without
+the flag writes the same headers and network page, byte for byte. `scripts/check-build.ts` refuses a build whose
+policy allows any host, so a deploy cannot ship one to the site; it is served from an origin of its own, where it shares
+no storage with the site. A document under a password is never kept in a space.
+
 ## How it is described
 
 Never as an absolute (Paul, 2026-10-11: "Saying we never save anything is wrong; we should say that's the

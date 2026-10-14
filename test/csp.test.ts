@@ -63,3 +63,25 @@ test('the cache: every hashed file (the app file, the stylesheet, a templates fi
   // Every page and file keeps the site's policy.
   expect(headersFor(raw, '/sw.js')['Content-Security-Policy']).toContain("worker-src 'self'");
 });
+
+test('a Spaces build (VITE_SPACES) differs from the site’s policy in one place: connect-src lets the editor reach any https host, the embed page none', () => {
+  const spaces = fillHeaders(raw, { scripts: ["'sha256-x'"], spaces: true });
+  const flagged = [...spaces.matchAll(/Content-Security-Policy: (.+)/g)].map((m) => m[1]);
+  expect(flagged).toHaveLength(2);
+  // A member's PDS, the space's host, an authorization server: none of them known when the site is built.
+  expect(directive(flagged[0], 'connect-src')).toEqual([...directive(csp, 'connect-src')!, 'https:']);
+  expect(flagged[0].replace(' https:;', ';')).toBe(csp);
+  expect(flagged[1]).toBe(policies[1]);
+  for (const p of flagged) expect(directive(p, 'img-src')).not.toContain('https:');
+  // The site's own build is the policy as it was: the flag off is no flag.
+  expect(fillHeaders(raw, { scripts: ["'sha256-x'"], spaces: false })).toBe(filled);
+});
+
+test('the Spaces entries are in the list only for a Spaces build', () => {
+  const spaces = reaches({ spaces: true }).filter((r) => !reaches().includes(r));
+  expect(spaces.length).toBeGreaterThan(0);
+  expect(reaches().some((r) => r.host === '*' && r.csp?.includes('connect'))).toBe(false);
+  expect(spaces.some((r) => r.host === '*' && r.csp?.includes('connect'))).toBe(true);
+  expect(sources('connect')).not.toContain('https:');
+  expect(sources('connect', true)).toContain('https:');
+});

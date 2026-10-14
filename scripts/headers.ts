@@ -19,17 +19,17 @@ export const scriptHash = (code: string) => `'sha256-${createHash('sha256').upda
 export const inlineScripts = (page: string): string[] =>
   [...page.matchAll(/<script(?![^>]*\bsrc=)(?![^>]*type="application\/(?:ld\+)?json")[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]).filter((code) => code.trim());
 
-/** The sources the registry allows by one directive: "https://host". */
-export function sources(directive: Directive): string[] {
-  return reaches()
+/** The sources the registry allows by one directive: "https://host", and "https:" for an entry that is any https address (a Spaces build's). */
+export function sources(directive: Directive, spaces = false): string[] {
+  return reaches({ spaces })
     .filter((r) => r.csp?.includes(directive))
-    .map((r) => `https://${r.host}`)
+    .map((r) => (r.host === '*' ? 'https:' : `https://${r.host}`))
     .filter((s, i, all) => all.indexOf(s) === i);
 }
 
-/** The headers file with its placeholders filled. */
-export function fillHeaders(text: string, { scripts }: { scripts: string[] }): string {
-  return text.replaceAll('{{scripts}}', scripts.join(' ')).replaceAll('{{img}}', sources('img').join(' ')).replaceAll('{{connect}}', sources('connect').join(' '));
+/** The headers file with its placeholders filled; `spaces` for a Spaces build (VITE_SPACES), whose connect-src is any https address. */
+export function fillHeaders(text: string, { scripts, spaces = false }: { scripts: string[]; spaces?: boolean }): string {
+  return text.replaceAll('{{scripts}}', scripts.join(' ')).replaceAll('{{img}}', sources('img').join(' ')).replaceAll('{{connect}}', sources('connect', spaces).join(' '));
 }
 
 /**

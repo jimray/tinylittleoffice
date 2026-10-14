@@ -128,3 +128,14 @@ test('docs/network.md and public/network.html name every host, and the page runs
   expect(networkPage()).not.toMatch(/<script/i);
   for (const r of reaches()) if (r.host !== '*') expect(networkDoc(), r.host).toContain(r.host);
 });
+
+test('a Spaces build’s network page names the hosts it adds, and the site’s does not', () => {
+  const added = reaches({ spaces: true }).filter((r) => !reaches().includes(r));
+  expect(added.length).toBeGreaterThan(0);
+  for (const r of added) {
+    expect(networkPage({ spaces: true }), r.what).toContain(r.what);
+    expect(networkPage(), r.what).not.toContain(r.what);
+    expect(networkDoc(), r.what).not.toContain(r.what);
+  }
+  expect(networkPage({ spaces: true })).not.toMatch(/<script/i);
+});

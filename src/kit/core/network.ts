@@ -123,8 +123,27 @@ export const NETWORK = {
 
 export type Place = keyof typeof NETWORK;
 
-/** Every entry, in the order above. */
-export const reaches = (): Reach[] => Object.values(NETWORK);
+/**
+ * What a Spaces build reaches besides (VITE_SPACES=1; Jim, 2026-10-14): a document kept in an atproto space is read and
+ * written at hosts no list can name before a person signs in, each member's own, so that build's connect-src allows any
+ * https address. Never the site's: scripts/check-build.ts refuses a build that allows it, so a deploy cannot ship one;
+ * it is served from an origin of its own. Nothing in src/ reaches these yet.
+ */
+const SPACES = {
+  atproto: {
+    host: '*',
+    what: 'Your atproto account’s hosts, when you sign in and keep a document in a space: your PDS and its authorization server, the space’s host, and the PDS of each member of the space, whose versions are read from where they keep them',
+    when: 'after a tap',
+    carries:
+      'The document, every version of it saved to the space, in the clear over TLS: a space decides who may read it, and does not hide it from the hosts that keep it (every member’s PDS reads what it holds); your account’s tokens; which spaces you are in',
+    stops: 'Never choosing Sign in: a document that is only its link asks no one; a document under a password is never kept in a space',
+    by: 'kit/share/versions.ts',
+    csp: ['connect'],
+  },
+} as const satisfies Record<string, Reach>;
+
+/** Every entry, in the order above; a Spaces build's after them. */
+export const reaches = ({ spaces = false }: { spaces?: boolean } = {}): Reach[] => [...Object.values(NETWORK), ...(spaces ? Object.values(SPACES) : [])];
 
 /** An entry's https origin, without a trailing slash. */
 export const origin = (place: Place): string => `https://${NETWORK[place].host}`;
@@ -139,5 +158,5 @@ export function hostMatches(pattern: string, host: string): boolean {
 
 /** Whether a host is one the list names. */
 export function listed(host: string): boolean {
-  return reaches().some((r) => hostMatches(r.host, host));
+  return reaches({ spaces: true }).some((r) => hostMatches(r.host, host));
 }

@@ -6,6 +6,7 @@
  *   - dist/_headers has the scripts' hashes in place of {{scripts}}: every script the apps' pages carry
  *     (src/kit/draw/page.ts) and every inline script of a built page (the theme script in the shell, index.html), or
  *     the browser would refuse to run it.
+ *   - no policy lets a page reach any host: a Spaces build (VITE_SPACES) is never deployed to the site.
  *   - dist/version.json has the shape of src/kit/core/version.ts and the same script hashes as the policy.
  *   - the guides for agents: llms.txt (and the same at .well-known/llms.txt), llms-full.txt, and each app's
  *     examples beside its page (examples/<app>.json for llms/<app>.txt).
@@ -41,6 +42,9 @@ export function checkBuild(dist: string, scripts: string[] = []): string[] {
     if (headers.includes('{{scripts}}')) problems.push('_headers still has {{scripts}}: the hashes were not written');
     const policies = [...headers.matchAll(/script-src ([^;]*);/g)].map((m) => m[1]);
     if (!policies.length) problems.push('_headers has no script-src');
+    // A Spaces build (VITE_SPACES) lets its pages reach any host; it is served from an origin of its own, never the site's.
+    if ([...headers.matchAll(/connect-src ([^;\n]*)/g)].some((m) => m[1].split(/\s+/).includes('https:')))
+      problems.push('_headers lets a page reach any host (connect-src https:): a Spaces build (VITE_SPACES), which is never deployed to the site');
     const allowed = (h: string) => policies.every((p) => p.split(/\s+/).includes(h));
     for (const code of scripts) if (!allowed(scriptHash(code))) problems.push(`a page script is not in the policy: ${code.slice(0, 40).replace(/\s+/g, ' ')}…`);
     // /version.json names the same hashes, for anyone checking the site against its source.

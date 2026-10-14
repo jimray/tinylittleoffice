@@ -58,6 +58,15 @@ test('the policy: the placeholder left, a page script or an inline script withou
   expect(checkBuild(dist, [SCRIPT])).toEqual([]);
 });
 
+test('a Spaces build never ships: a policy that lets the page reach any host is refused', () => {
+  build();
+  const headers = readFileSync(join(dist, '_headers'), 'utf8').replace("object-src 'none'", "connect-src 'self' data: https:; object-src 'none'");
+  writeFileSync(join(dist, '_headers'), headers);
+  expect(checkBuild(dist, [SCRIPT])).toEqual(['_headers lets a page reach any host (connect-src https:): a Spaces build (VITE_SPACES), which is never deployed to the site']);
+  writeFileSync(join(dist, '_headers'), headers.replace(' https:;', ' https://tinier.tinylittleoffice.com;'));
+  expect(checkBuild(dist, [SCRIPT])).toEqual([]);
+});
+
 test('the theme script in the shell (index.html), its hash in the policy and version.json, may ship', () => {
   const [theme] = inlineScripts(readFileSync(join(import.meta.dirname, '../index.html'), 'utf8'));
   build({ inline: theme });
