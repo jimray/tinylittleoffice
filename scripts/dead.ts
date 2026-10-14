@@ -32,6 +32,10 @@ const EXEMPT: { why: string; test: (path: string, name: string, source: string) 
     test: (_p, name, source) => new RegExp(`^export const ${name} = (-?[\\d.]+|'[^'\\n]*'|"[^"\\n]*");`, 'm').test(source) && count(code(source), name) > 1,
   },
   { why: 'a custom element’s class: the page names it by its tag, not its class', test: (_p, name, source) => new RegExp(`customElements\\.define\\([^)]*\\b${name}\\)`).test(source) },
+  {
+    why: 'versions in an atproto space, behind a flag: the part that needs no network, held by its test before the space I/O that will use it is written (Jim, 2026-10-14); this goes when it is wired',
+    test: (path) => path === 'src/kit/share/versions.ts',
+  },
 ];
 
 export interface Dead {
